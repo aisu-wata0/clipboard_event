@@ -41,7 +41,15 @@ def print_to_stdout(clipboard_content):
 
 
 class ClipboardWatcher(threading.Thread):
-	def __init__(self, predicate, callback, cooldown=0.1, discard_empty=True, linear_threads=True):
+	def __init__(
+		self,
+		predicate,
+		callback,
+		cooldown=0.1,
+		discard_empty=True,
+		linear_threads=True,
+		queue_text_events=True,
+	):
 		"""
 		self
 		"""
@@ -54,8 +62,11 @@ class ClipboardWatcher(threading.Thread):
 		self._threads = []
 		self._discard_empty = discard_empty
 		self._linear_threads = linear_threads
+		self.queue_text_events = queue_text_events
+		if not self.queue_text_events:
+			self._linear_threads= True
 		self._last_thread = None
-		self._last_idx = None
+		self._last_idx = 0
 
 	def run(self):
 		# Initialize with current clipboard content
@@ -72,26 +83,24 @@ class ClipboardWatcher(threading.Thread):
 				recent_value = tmp_value
 				if not self._paused:
 					if self._predicate(recent_value):
-						thread = self._callback(recent_value)
-						self._threads.append(thread)
-						if not self._linear_threads:
-							thread.start()
-						else:
-							if not self._last_thread:
-								self._last_thread = thread
-								self._last_idx = len(self._threads) - 1
+						if len(self._threads) == 0 or (len(self._threads) > 0 and self.queue_text_events):
+							thread = self._callback(recent_value)
+							self._threads.append(thread)
+							if not self._linear_threads:
 								thread.start()
 
 			if self._linear_threads:
-				if self._last_thread and self._last_idx is not None and not self._last_thread.is_alive():
+				if self._last_thread and not self._last_thread.is_alive():
 					self._last_thread.join()
 					self._threads.pop(self._last_idx)
-					if self._last_idx < len(self._threads):
+					self._last_thread = None
+				
+				if not self._last_thread:
+					if len(self._threads) > self._last_idx:
+						# self._last_idx = len(self._threads) - 1
 						self._last_thread = self._threads[self._last_idx]
 						self._last_thread.start()
-					else:
-						self._last_thread = None
-						self._last_idx = None
+
 			time.sleep(self._cooldown)
 
 	def pause(self):
