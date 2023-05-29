@@ -79,12 +79,13 @@ class ClipboardWatcher(threading.Thread):
 			except:
 				pass
 			if tmp_value and tmp_value != recent_value:
-				# Update recent_value with current content
-				recent_value = tmp_value
 				if not self._paused:
-					if self._predicate(recent_value):
+					# Update recent_value with current content
+					recent_value = tmp_value
+					text = self._predicate(tmp_value)
+					if text:
 						if len(self._threads) == 0 or (len(self._threads) > 0 and self.queue_text_events):
-							thread = self._callback(recent_value)
+							thread = self._callback(text)
 							self._threads.append(thread)
 							if not self._linear_threads:
 								thread.start()
