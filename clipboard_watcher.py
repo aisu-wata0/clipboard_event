@@ -49,11 +49,11 @@ class ClipboardWatcher(threading.Thread):
 		discard_empty=True,
 		linear_threads=True,
 		queue_text_events=True,
+		**kwargs,
 	):
 		"""
-		self
 		"""
-		super(ClipboardWatcher, self).__init__()
+		super().__init__(**kwargs)
 		self._predicate = predicate
 		self._callback = callback
 		self._cooldown = cooldown
