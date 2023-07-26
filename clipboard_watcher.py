@@ -135,3 +135,4 @@ class ClipboardWatcher(threading.Thread):
 							break
 						except:
 							pass
+		self._stopping = False
